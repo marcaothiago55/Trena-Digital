@@ -1,0 +1,89 @@
+#include <U8g2lib.h> // Inclui a biblioteca para o display OLED
+
+U8G2_SSD1306_128X64_NONAME_F_HW_I2C u8g2(U8G2_R0, /* reset=*/ U8X8_PIN_NONE); // Inicializa o display
+
+const int pinoBuzzer = 2;
+int inches = 0;
+int cm = 0;
+
+const int pinoLedVerde = 8; // Define o pino do LED verde
+const int pinoLedVermelho = 9; // Define o pino do LED vermelho
+
+const char* autor = "Professor Thiago"; // Autor do código
+const char* revisao = "V.0.1"; // Versão do código
+const char* data = "07/11/2023"; // Data da versão
+
+long readUltrasonicDistance(int triggerPin, int echoPin) {
+  pinMode(triggerPin, OUTPUT);
+  digitalWrite(triggerPin, LOW);
+  delayMicroseconds(2);
+  digitalWrite(triggerPin, HIGH);
+  delayMicroseconds(10);
+  digitalWrite(triggerPin, LOW);
+  pinMode(echoPin, INPUT);
+  return pulseIn(echoPin, HIGH);
+}
+
+void setup() {
+  u8g2.begin(); // Inicializa o display
+  Serial.begin(9600);
+  
+  pinMode(pinoLedVerde, OUTPUT); // Define o pino do LED verde como saída
+  pinMode(pinoLedVermelho, OUTPUT); // Define o pino do LED vermelho como saída
+}
+
+void loop() {
+  cm = 0.01723 * readUltrasonicDistance(5, 7);
+  inches = (cm / 2.54);
+
+  Serial.print(inches);
+  Serial.print("in, ");
+  Serial.print(cm);
+  Serial.println("cm");
+
+  mostrarDistanciaOLED(cm); // Mostra a distância em centímetros no display OLED
+  controleLEDs(cm); // Controla os LEDs
+  
+  delay(100);
+
+  if (cm <= 50) {
+    tone(pinoBuzzer, 1500);
+  } else {
+    noTone(pinoBuzzer);
+  }
+}
+
+void mostrarDistanciaOLED(int distance) {
+  u8g2.clearBuffer();
+  u8g2.setFont(u8g2_font_logisoso16_tf); // Define uma fonte menor para o texto
+  u8g2.setDrawColor(1); // Define a cor do texto (1 = Branco)
+  
+  // Centraliza o texto da medida na tela
+  int textWidth = u8g2.getStrWidth("999 cm"); // Largura total do texto
+  int xPos = (128 - textWidth) / 2; // Posição X para centralizar
+  
+  u8g2.setCursor(xPos, 40); // Define a posição do texto no display
+  u8g2.print(distance); // Exibe o valor da distância em centímetros
+  u8g2.print(" cm"); // Exibe a unidade de medida
+  
+  // Exibe as informações do autor, versão e data na parte inferior da tela
+  u8g2.setFont(u8g2_font_profont10_mr); // Define a fonte para as informações
+  u8g2.setCursor(0, 60); // Define a posição para as informações
+  u8g2.print(autor);
+  u8g2.print(" - V.");
+  u8g2.print(revisao);
+  u8g2.print(" - ");
+  u8g2.print(data);
+  
+  u8g2.sendBuffer(); // Envia o texto para o display
+}
+
+void controleLEDs(int distance) {
+  if (distance <= 50) {
+    digitalWrite(pinoLedVerde, HIGH); // Acende o LED verde
+    digitalWrite(pinoLedVermelho, LOW); // Apaga o LED vermelho
+  } else {
+    digitalWrite(pinoLedVerde, LOW); // Apaga o LED verde
+    digitalWrite(pinoLedVermelho, HIGH); // Acende o LED vermelho
+  }
+}
